@@ -49,3 +49,47 @@ type TCPConfig struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
+
+type IoTHost struct {
+	ID        int64     `json:"id"`
+	HostCode  string    `json:"host_code"`
+	HostName  string    `json:"host_name"`
+	IP        string    `json:"ip"`
+	Port      *int      `json:"port"`
+	Protocol  string    `json:"protocol"`
+	Location  string    `json:"location"`
+	Status    int       `json:"status"`
+	Remark    string    `json:"remark"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type IoTChannel struct {
+	ID          int64     `json:"id"`
+	HostID      int64     `json:"host_id"`
+	ChannelCode string    `json:"channel_code"`
+	ChannelName string    `json:"channel_name"`
+	DataType    string    `json:"data_type"`
+	Unit        string    `json:"unit"`
+	Accuracy    int       `json:"accuracy"`
+	MinValue    *float64  `json:"min_value"`
+	MaxValue    *float64  `json:"max_value"`
+	Status      int       `json:"status"`
+	Remark      string    `json:"remark"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+type IoTChannelData struct {
+	ID          int64     `json:"id"`
+	HostID      int64     `json:"host_id"`
+	ChannelID   int64     `json:"channel_id"`
+	Value       *float64  `json:"value"`
+	StrValue    *string   `json:"str_value"`
+	BoolValue   *bool     `json:"bool_value"`
+	Quality     int       `json:"quality"`
+	Ts          time.Time `json:"ts"`
+	CreatedAt   time.Time `json:"created_at"`
+	HostCode    string    `json:"host_code,omitempty"`
+	ChannelCode string    `json:"channel_code,omitempty"`
+}

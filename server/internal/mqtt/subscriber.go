@@ -15,6 +15,7 @@ import (
 type Subscriber struct {
 	cfg    config.MQTTConfig
 	frames *service.CANFrameService
+	iot    *service.IoTService
 	client paho.Client
 }
 
@@ -25,8 +26,8 @@ type framePayload struct {
 	Data     string `json:"data"`
 }
 
-func NewSubscriber(cfg config.MQTTConfig, frames *service.CANFrameService) *Subscriber {
-	return &Subscriber{cfg: cfg, frames: frames}
+func NewSubscriber(cfg config.MQTTConfig, frames *service.CANFrameService, iot *service.IoTService) *Subscriber {
+	return &Subscriber{cfg: cfg, frames: frames, iot: iot}
 }
 
 func (s *Subscriber) Start() error {
@@ -46,8 +47,12 @@ func (s *Subscriber) Start() error {
 		opts.SetPassword(s.cfg.Password)
 	}
 	opts.OnConnect = func(client paho.Client) {
-		log.Printf("mqtt connected, subscribing topic=%s", s.cfg.Topic)
-		if token := client.Subscribe(s.cfg.Topic, s.cfg.QOS, s.handleMessage); token.Wait() && token.Error() != nil {
+		topics := map[string]byte{s.cfg.Topic: s.cfg.QOS}
+		if s.cfg.IOTTopic != "" {
+			topics[s.cfg.IOTTopic] = s.cfg.QOS
+		}
+		log.Printf("mqtt connected, subscribing topics=%v", topics)
+		if token := client.SubscribeMultiple(topics, s.handleMessage); token.Wait() && token.Error() != nil {
 			log.Printf("mqtt subscribe failed: %v", token.Error())
 		}
 	}
@@ -67,6 +72,17 @@ func (s *Subscriber) Start() error {
 }
 
 func (s *Subscriber) handleMessage(_ paho.Client, msg paho.Message) {
+	if strings.HasPrefix(msg.Topic(), "iot/") {
+		if s.iot == nil {
+			log.Printf("iot mqtt message ignored, service not configured topic=%s", msg.Topic())
+			return
+		}
+		if _, err := s.iot.IngestMQTT(msg.Topic(), msg.Payload()); err != nil {
+			log.Printf("iot mqtt ingest failed, topic=%s err=%v", msg.Topic(), err)
+		}
+		return
+	}
+
 	payload, err := decodeFramePayload(msg.Topic(), msg.Payload())
 	if err != nil {
 		log.Printf("mqtt message ignored, topic=%s err=%v", msg.Topic(), err)
