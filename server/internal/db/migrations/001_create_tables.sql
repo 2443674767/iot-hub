@@ -137,3 +137,54 @@ CREATE INDEX IF NOT EXISTS idx_raw_can_data_can_id ON raw_can_data(can_id);
 CREATE INDEX IF NOT EXISTS idx_raw_can_data_direction ON raw_can_data(direction);
 CREATE INDEX IF NOT EXISTS idx_raw_can_data_read_at ON raw_can_data(read_at);
 CREATE INDEX IF NOT EXISTS idx_tcp_configs_enabled ON tcp_configs(enabled);
+
+-- IoT 数据来源主机表
+CREATE TABLE IF NOT EXISTS iot_host (
+    id          BIGSERIAL PRIMARY KEY,
+    host_code   VARCHAR(64) UNIQUE NOT NULL,
+    host_name   VARCHAR(128) NOT NULL,
+    ip          VARCHAR(64),
+    port        INT,
+    protocol    VARCHAR(32),
+    location    VARCHAR(128),
+    status      SMALLINT DEFAULT 1,
+    remark      TEXT,
+    created_at  TIMESTAMP DEFAULT NOW(),
+    updated_at  TIMESTAMP DEFAULT NOW()
+);
+
+-- IoT 通道表
+CREATE TABLE IF NOT EXISTS iot_channel (
+    id            BIGSERIAL PRIMARY KEY,
+    host_id        BIGINT NOT NULL REFERENCES iot_host(id),
+    channel_code   VARCHAR(64) NOT NULL,
+    channel_name   VARCHAR(128) NOT NULL,
+    data_type      VARCHAR(32),
+    unit           VARCHAR(32),
+    accuracy       INT DEFAULT 2,
+    min_value      DOUBLE PRECISION,
+    max_value      DOUBLE PRECISION,
+    status         SMALLINT DEFAULT 1,
+    remark         TEXT,
+    created_at     TIMESTAMP DEFAULT NOW(),
+    updated_at     TIMESTAMP DEFAULT NOW(),
+    UNIQUE(host_id, channel_code)
+);
+
+-- IoT 通道实时数据表
+CREATE TABLE IF NOT EXISTS iot_channel_data (
+    id          BIGSERIAL PRIMARY KEY,
+    host_id      BIGINT NOT NULL REFERENCES iot_host(id),
+    channel_id   BIGINT NOT NULL REFERENCES iot_channel(id),
+    value        DOUBLE PRECISION,
+    str_value    TEXT,
+    bool_value   BOOLEAN,
+    quality      SMALLINT DEFAULT 1,
+    ts           TIMESTAMP NOT NULL,
+    created_at   TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_iot_channel_host_id ON iot_channel(host_id);
+CREATE INDEX IF NOT EXISTS idx_iot_channel_data_host_id ON iot_channel_data(host_id);
+CREATE INDEX IF NOT EXISTS idx_iot_channel_data_channel_id ON iot_channel_data(channel_id);
+CREATE INDEX IF NOT EXISTS idx_iot_channel_data_ts ON iot_channel_data(ts);
