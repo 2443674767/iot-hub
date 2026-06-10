@@ -16,5 +16,12 @@ mqtt:
   broker: "tcp://127.0.0.1:11883"
   client_id: "can-server"
   topic: "can/devices/+/channels/+/frames"
+  iot_topic: "iot/+/+"
   qos: 1
   connect_timeout_ms: 5000
+
+influxdb:
+  url: "http://localhost:8086"
+  org: "zy"
+  bucket: "iot_data"
+  measurement: "iot_mqtt_data"

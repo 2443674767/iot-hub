@@ -12,6 +12,7 @@ type Config struct {
 	Database DatabaseConfig
 	CAN      CANConfig
 	MQTT     MQTTConfig
+	InfluxDB InfluxDBConfig
 }
 
 type ServerConfig struct {
@@ -37,8 +38,17 @@ type MQTTConfig struct {
 	Username         string
 	Password         string
 	Topic            string
+	IOTTopic         string
 	QOS              byte
 	ConnectTimeoutMS int
+}
+
+type InfluxDBConfig struct {
+	URL         string
+	Token       string
+	Org         string
+	Bucket      string
+	Measurement string
 }
 
 func Load() *Config {
@@ -63,8 +73,16 @@ func Load() *Config {
 			Username:         getEnv("MQTT_USERNAME", ""),
 			Password:         getEnv("MQTT_PASSWORD", ""),
 			Topic:            getEnv("MQTT_TOPIC", "can/devices/+/channels/+/frames"),
+			IOTTopic:         getEnv("MQTT_IOT_TOPIC", "iot/+/+"),
 			QOS:              byte(getEnvInt("MQTT_QOS", 1)),
 			ConnectTimeoutMS: getEnvInt("MQTT_CONNECT_TIMEOUT_MS", 5000),
+		},
+		InfluxDB: InfluxDBConfig{
+			URL:         getEnv("INFLUXDB_URL", "http://localhost:8086"),
+			Token:       getEnv("INFLUXDB_TOKEN", "b1fKGTYjOhUtB8yIeDMyD1bosp4I2dBg0ct74bPpghis9w6uobMxPU9eSs-2dfkH5EytZuNyUYe7ELLzrPhDuQ=="),
+			Org:         getEnv("INFLUXDB_ORG", "zy"),
+			Bucket:      getEnv("INFLUXDB_BUCKET", "iot_data"),
+			Measurement: getEnv("INFLUXDB_MEASUREMENT", "iot_mqtt_data"),
 		},
 	}
 }
