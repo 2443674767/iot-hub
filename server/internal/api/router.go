@@ -1,12 +1,15 @@
 package api
 
 import (
+	"log"
+
 	"github.com/gin-gonic/gin"
 	"github.com/user/can-server/config"
 	"github.com/user/can-server/internal/api/handler"
 	"github.com/user/can-server/internal/api/middleware"
 	"github.com/user/can-server/internal/api/ws"
 	"github.com/user/can-server/internal/db/repository"
+	mqttsub "github.com/user/can-server/internal/mqtt"
 	"github.com/user/can-server/internal/service"
 )
 
@@ -18,16 +21,21 @@ func NewServer(cfg *config.Config) *Server {
 }
 
 type Server struct {
-	cfg    *config.Config
-	engine *gin.Engine
+	cfg            *config.Config
+	engine         *gin.Engine
+	mqttSubscriber *mqttsub.Subscriber
 }
 
 func (s *Server) Start() error {
-	s.registerRoutes()
+	canFrames := s.registerRoutes()
+	s.mqttSubscriber = mqttsub.NewSubscriber(s.cfg.MQTT, canFrames)
+	if err := s.mqttSubscriber.Start(); err != nil {
+		log.Printf("mqtt subscriber start failed: %v", err)
+	}
 	return s.engine.Run(s.cfg.ServerAddr())
 }
 
-func (s *Server) registerRoutes() {
+func (s *Server) registerRoutes() *service.CANFrameService {
 	s.engine.Use(middleware.CORS())
 
 	svc := service.NewDeviceService(s.cfg)
@@ -35,7 +43,8 @@ func (s *Server) registerRoutes() {
 	tcpSvc := service.NewTCPConfigService(&repository.TCPConfigRepo{})
 	tcpHandler := handler.NewTCPConfigHandler(tcpSvc)
 	canHub := ws.NewHub()
-	canFrameHandler := handler.NewCANFrameHandler(&repository.LogRepo{}, canHub)
+	canFrameSvc := service.NewCANFrameService(&repository.LogRepo{}, canHub)
+	canFrameHandler := handler.NewCANFrameHandler(canFrameSvc)
 
 	api := s.engine.Group("/api/v1")
 	{
@@ -49,4 +58,5 @@ func (s *Server) registerRoutes() {
 		api.PUT("/tcp-configs/:id", tcpHandler.Update)
 		api.DELETE("/tcp-configs/:id", tcpHandler.Delete)
 	}
+	return canFrameSvc
 }

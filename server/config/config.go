@@ -11,6 +11,7 @@ type Config struct {
 	Server   ServerConfig
 	Database DatabaseConfig
 	CAN      CANConfig
+	MQTT     MQTTConfig
 }
 
 type ServerConfig struct {
@@ -29,6 +30,17 @@ type CANConfig struct {
 	TCPTimeoutMS int
 }
 
+type MQTTConfig struct {
+	Enabled          bool
+	Broker           string
+	ClientID         string
+	Username         string
+	Password         string
+	Topic            string
+	QOS              byte
+	ConnectTimeoutMS int
+}
+
 func Load() *Config {
 	return &Config{
 		Server: ServerConfig{
@@ -44,6 +56,16 @@ func Load() *Config {
 			TCPPort:      getEnvInt("CAN_TCP_PORT", 9000),
 			TCPTimeoutMS: getEnvInt("CAN_TCP_TIMEOUT_MS", 3000),
 		},
+		MQTT: MQTTConfig{
+			Enabled:          getEnvBool("MQTT_ENABLED", true),
+			Broker:           getEnv("MQTT_BROKER", "tcp://127.0.0.1:11883"),
+			ClientID:         getEnv("MQTT_CLIENT_ID", "can-server"),
+			Username:         getEnv("MQTT_USERNAME", ""),
+			Password:         getEnv("MQTT_PASSWORD", ""),
+			Topic:            getEnv("MQTT_TOPIC", "can/devices/+/channels/+/frames"),
+			QOS:              byte(getEnvInt("MQTT_QOS", 1)),
+			ConnectTimeoutMS: getEnvInt("MQTT_CONNECT_TIMEOUT_MS", 5000),
+		},
 	}
 }
 
@@ -57,6 +79,10 @@ func (c CANConfig) TCPAddr() string {
 
 func (c CANConfig) TCPTimeout() time.Duration {
 	return time.Duration(c.TCPTimeoutMS) * time.Millisecond
+}
+
+func (c MQTTConfig) ConnectTimeout() time.Duration {
+	return time.Duration(c.ConnectTimeoutMS) * time.Millisecond
 }
 
 func getEnv(key, fallback string) string {
@@ -76,4 +102,16 @@ func getEnvInt(key string, fallback int) int {
 		return fallback
 	}
 	return n
+}
+
+func getEnvBool(key string, fallback bool) bool {
+	v := os.Getenv(key)
+	if v == "" {
+		return fallback
+	}
+	parsed, err := strconv.ParseBool(v)
+	if err != nil {
+		return fallback
+	}
+	return parsed
 }

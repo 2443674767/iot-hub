@@ -10,3 +10,11 @@ can:
   tcp_host: "127.0.0.1"
   tcp_port: 9000
   tcp_timeout_ms: 3000
+
+mqtt:
+  enabled: true
+  broker: "tcp://127.0.0.1:11883"
+  client_id: "can-server"
+  topic: "can/devices/+/channels/+/frames"
+  qos: 1
+  connect_timeout_ms: 5000
