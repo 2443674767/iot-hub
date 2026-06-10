@@ -1,0 +1,12 @@
+server:
+  port: 8080
+
+database:
+  dsn: "postgres://admin:123456@127.0.0.1:5433/testdb?sslmode=disable"
+
+can:
+  serial_port: "/dev/ttyUSB0"
+  baud_rate: 115200
+  tcp_host: "127.0.0.1"
+  tcp_port: 9000
+  tcp_timeout_ms: 3000

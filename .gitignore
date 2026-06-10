@@ -1,0 +1,17 @@
+# Go构建产物
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+
+# 依赖缓存
+vendor/
+
+# IDE文件
+.vscode/
+.idea/
+
+README.md
