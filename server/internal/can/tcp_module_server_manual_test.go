@@ -16,6 +16,10 @@ import (
 
 const manualModuleAddr = "127.0.0.1:9000"
 
+//RUN_TCP_MODULE_SERVER=1 BACKEND_URL="http://127.0.0.1:8080" \
+//GOTOOLCHAIN=local GOCACHE=/private/tmp/go-build-cache-can-server \
+//go test ./internal/can -run TestManualTCPModuleServer -v
+
 func TestManualTCPModuleServer(t *testing.T) {
 	if os.Getenv("RUN_TCP_MODULE_SERVER") != "1" {
 		t.Skip("set RUN_TCP_MODULE_SERVER=1 to start the long-running TCP module simulator")
