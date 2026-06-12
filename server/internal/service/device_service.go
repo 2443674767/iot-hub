@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"log"
 	"net"
 
 	"github.com/user/can-server/config"
@@ -110,6 +111,7 @@ func (s *DeviceService) sendAndLog(canID byte, frame [8]byte) error {
 		return fmt.Errorf("load tcp config: %w", err)
 	}
 	addr := net.JoinHostPort(tcpCfg.Host, fmt.Sprintf("%d", tcpCfg.Port))
+	log.Printf("send can frame using active tcp config: id=%d name=%s addr=%s can_id=0x%02X data=% X", tcpCfg.ID, tcpCfg.Name, addr, canID, frame)
 	if err := s.logger.RecordFrontendFrame(canID, frame); err != nil {
 		return fmt.Errorf("log can message: %w", err)
 	}

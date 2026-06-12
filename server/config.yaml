@@ -10,3 +10,5 @@ can:
   tcp_host: "127.0.0.1"
   tcp_port: 9000
   tcp_timeout_ms: 3000
+  tcp_listen_host: "127.0.0.1"
+  tcp_listen_port: 9001

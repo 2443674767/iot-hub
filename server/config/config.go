@@ -22,11 +22,13 @@ type DatabaseConfig struct {
 }
 
 type CANConfig struct {
-	SerialPort   string
-	BaudRate     int
-	TCPHost      string
-	TCPPort      int
-	TCPTimeoutMS int
+	SerialPort    string
+	BaudRate      int
+	TCPHost       string
+	TCPPort       int
+	TCPTimeoutMS  int
+	TCPListenHost string
+	TCPListenPort int
 }
 
 func Load() *Config {
@@ -38,11 +40,13 @@ func Load() *Config {
 			DSN: getEnv("DB_DSN", "postgres://admin:123456@127.0.0.1:5433/testdb?sslmode=disable"),
 		},
 		CAN: CANConfig{
-			SerialPort:   getEnv("CAN_SERIAL_PORT", "/dev/ttyUSB0"),
-			BaudRate:     getEnvInt("CAN_BAUD_RATE", 115200),
-			TCPHost:      getEnv("CAN_TCP_HOST", "127.0.0.1"),
-			TCPPort:      getEnvInt("CAN_TCP_PORT", 9000),
-			TCPTimeoutMS: getEnvInt("CAN_TCP_TIMEOUT_MS", 3000),
+			SerialPort:    getEnv("CAN_SERIAL_PORT", "/dev/ttyUSB0"),
+			BaudRate:      getEnvInt("CAN_BAUD_RATE", 115200),
+			TCPHost:       getEnv("CAN_TCP_HOST", "192.168.1.253"),
+			TCPPort:       getEnvInt("CAN_TCP_PORT", 8000),
+			TCPTimeoutMS:  getEnvInt("CAN_TCP_TIMEOUT_MS", 3000),
+			TCPListenHost: getEnv("CAN_TCP_LISTEN_HOST", "127.0.0.1"),
+			TCPListenPort: getEnvInt("CAN_TCP_LISTEN_PORT", 9001),
 		},
 	}
 }
@@ -57,6 +61,10 @@ func (c CANConfig) TCPAddr() string {
 
 func (c CANConfig) TCPTimeout() time.Duration {
 	return time.Duration(c.TCPTimeoutMS) * time.Millisecond
+}
+
+func (c CANConfig) TCPListenAddr() string {
+	return fmt.Sprintf("%s:%d", c.TCPListenHost, c.TCPListenPort)
 }
 
 func getEnv(key, fallback string) string {

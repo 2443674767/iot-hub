@@ -26,10 +26,10 @@ import { sendCommand } from '../../api/devices'
 const message = ref('')
 
 const presets = [
-  { name: '绿色常亮', r: 0x4F, g: 0xB7, b: 0x10, hex: '#4FB710' },
-  { name: '白色常亮', r: 0xFF, g: 0xFF, b: 0xFF, hex: '#FFFFFF' },
-  { name: '蓝色常亮', r: 0x59, g: 0xCB, b: 0xE8, hex: '#59CBE8' },
-  { name: '红色常亮', r: 0xEF, g: 0x33, b: 0x40, hex: '#EF3340' },
+  { name: '绿色常亮', r: 0x00, g: 0x55, b: 0x99, hex: '#4FB710' },
+  { name: '白色常亮', r: 0x70, g: 0xFF, b: 0xCC, hex: '#FFFFFF' },
+  { name: '蓝色常亮', r: 0xE8, g: 0x59, b: 0xCB, hex: '#59CBE8' },
+  { name: '红色常亮', r: 0x00, g: 0xCC, b: 0x00, hex: '#EF3340' },
 ]
 
 async function setColor(r, g, b) {

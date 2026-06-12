@@ -11,8 +11,12 @@ export const useCanStore = defineStore('can', {
 
   actions: {
     appendMessage(msg) {
-      this.messageLog.push(msg)
-      this.lastMessage = msg
+      const enriched = {
+        ...msg,
+        _received_at: msg?.ts ?? Date.now(),
+      }
+      this.messageLog.push(enriched)
+      this.lastMessage = enriched
     },
 
     setConnected(status) {

@@ -51,8 +51,20 @@ func (r *TCPConfigRepo) GetActive() (*model.TCPConfig, error) {
 }
 
 func (r *TCPConfigRepo) Create(cfg model.TCPConfig) (*model.TCPConfig, error) {
+	tx, err := db.DB.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	if cfg.Enabled {
+		if _, err := tx.Exec("UPDATE tcp_configs SET enabled = FALSE, updated_at = NOW() WHERE enabled = TRUE"); err != nil {
+			return nil, err
+		}
+	}
+
 	var saved model.TCPConfig
-	err := db.DB.QueryRow(`
+	err = tx.QueryRow(`
 		INSERT INTO tcp_configs (name, host, port, enabled)
 		VALUES ($1, $2, $3, $4)
 		RETURNING id, name, host, port, enabled, created_at, updated_at
@@ -62,12 +74,30 @@ func (r *TCPConfigRepo) Create(cfg model.TCPConfig) (*model.TCPConfig, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
 	return &saved, nil
 }
 
 func (r *TCPConfigRepo) Update(id int64, cfg model.TCPConfig) (*model.TCPConfig, error) {
+	tx, err := db.DB.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	if cfg.Enabled {
+		if _, err := tx.Exec(
+			"UPDATE tcp_configs SET enabled = FALSE, updated_at = NOW() WHERE enabled = TRUE AND id <> $1",
+			id,
+		); err != nil {
+			return nil, err
+		}
+	}
+
 	var saved model.TCPConfig
-	err := db.DB.QueryRow(`
+	err = tx.QueryRow(`
 		UPDATE tcp_configs
 		SET name = $1,
 		    host = $2,
@@ -83,6 +113,9 @@ func (r *TCPConfigRepo) Update(id int64, cfg model.TCPConfig) (*model.TCPConfig,
 		return nil, fmt.Errorf("tcp config not found: %d", id)
 	}
 	if err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 	return &saved, nil

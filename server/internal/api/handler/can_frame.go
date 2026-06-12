@@ -4,27 +4,23 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/user/can-server/internal/api/ws"
 	"github.com/user/can-server/internal/can"
-	"github.com/user/can-server/internal/db/repository"
+	"github.com/user/can-server/internal/service"
 )
 
 type CANFrameHandler struct {
-	logs *repository.LogRepo
-	hub  *ws.Hub
+	frames *service.CANFrameService
 }
 
-func NewCANFrameHandler(logs *repository.LogRepo, hub *ws.Hub) *CANFrameHandler {
-	return &CANFrameHandler{logs: logs, hub: hub}
+func NewCANFrameHandler(frames *service.CANFrameService) *CANFrameHandler {
+	return &CANFrameHandler{frames: frames}
 }
 
 type receiveCANFrameRequest struct {
-	CANID string `json:"can_id"`
-	Data  string `json:"data"`
+	Raw string `json:"raw"`
 }
 
 func (h *CANFrameHandler) Receive(c *gin.Context) {
@@ -34,54 +30,37 @@ func (h *CANFrameHandler) Receive(c *gin.Context) {
 		return
 	}
 
-	canID, err := parseCANID(req.CANID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	data, err := parseCANData(req.Data)
+	canID, data, err := parseReceiveCANFrame(req)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	if err := h.logs.RecordReceivedFrame(canID, data); err != nil {
+	if err := h.frames.RecordReceivedAndBroadcast(canID, data); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	parsed := can.Parse(canID, data)
-	h.hub.Broadcast(gin.H{
-		"type":      "can_frame",
-		"can_id":    fmt.Sprintf("0x%02X", canID),
-		"device":    parsed.Device,
-		"data":      hex.EncodeToString(data[:]),
-		"parsed":    parsed.Parsed,
-		"direction": int(can.DirControllerToPC),
-	})
 	c.JSON(http.StatusOK, gin.H{"message": "frame recorded"})
 }
 
-func parseCANID(raw string) (byte, error) {
-	value := strings.TrimSpace(raw)
-	value = strings.TrimPrefix(strings.TrimPrefix(value, "0x"), "0X")
-	n, err := strconv.ParseUint(value, 16, 8)
-	if err != nil {
-		return 0, fmt.Errorf("invalid can_id")
+func parseReceiveCANFrame(req receiveCANFrameRequest) (byte, [8]byte, error) {
+	if strings.TrimSpace(req.Raw) == "" {
+		return 0, [8]byte{}, fmt.Errorf("raw tcp frame is required")
 	}
-	return byte(n), nil
+	return parseRawTCPFrame(req.Raw)
 }
 
-func parseCANData(raw string) ([8]byte, error) {
+func parseRawTCPFrame(raw string) (byte, [8]byte, error) {
 	var data [8]byte
 	value := strings.ReplaceAll(strings.TrimSpace(raw), " ", "")
 	value = strings.TrimPrefix(strings.TrimPrefix(value, "0x"), "0X")
 	decoded, err := hex.DecodeString(value)
 	if err != nil {
-		return data, fmt.Errorf("invalid data hex")
+		return 0, data, fmt.Errorf("invalid raw tcp frame hex")
 	}
-	if len(decoded) != 8 {
-		return data, fmt.Errorf("data must be 8 bytes")
+	canID, data, err := can.ParseTCPPayload(decoded)
+	if err != nil {
+		return 0, data, err
 	}
-	copy(data[:], decoded)
-	return data, nil
+	return canID, data, nil
 }

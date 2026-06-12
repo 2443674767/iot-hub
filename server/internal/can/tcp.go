@@ -1,6 +1,7 @@
 package can
 
 import (
+	"encoding/binary"
 	"fmt"
 	"net"
 	"time"
@@ -16,10 +17,27 @@ func NewTCPSender(addr string, timeout time.Duration) *TCPSender {
 }
 
 func BuildTCPPayload(id byte, data [8]byte) []byte {
-	payload := make([]byte, 0, 9)
-	payload = append(payload, id)
-	payload = append(payload, data[:]...)
+	payload := make([]byte, 13)
+	payload[0] = 0x08
+	binary.BigEndian.PutUint32(payload[1:5], uint32(id))
+	copy(payload[5:], data[:])
 	return payload
+}
+
+func ParseTCPPayload(payload []byte) (byte, [8]byte, error) {
+	var data [8]byte
+	if len(payload) != 13 {
+		return 0, data, fmt.Errorf("tcp payload must be 13 bytes")
+	}
+	if payload[0] != 0x08 {
+		return 0, data, fmt.Errorf("tcp payload dlc must be 0x08")
+	}
+	frameID := binary.BigEndian.Uint32(payload[1:5])
+	if frameID > 0xFF {
+		return 0, data, fmt.Errorf("unsupported can frame id: 0x%08X", frameID)
+	}
+	copy(data[:], payload[5:])
+	return byte(frameID), data, nil
 }
 
 func (s *TCPSender) SendFrame(id byte, data [8]byte) error {

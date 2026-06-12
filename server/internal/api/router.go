@@ -32,10 +32,13 @@ func (s *Server) registerRoutes() {
 
 	svc := service.NewDeviceService(s.cfg)
 	h := handler.NewDeviceHandler(svc)
-	tcpSvc := service.NewTCPConfigService(&repository.TCPConfigRepo{})
+	tcpConfigRepo := &repository.TCPConfigRepo{}
+	tcpSvc := service.NewTCPConfigService(tcpConfigRepo)
 	tcpHandler := handler.NewTCPConfigHandler(tcpSvc)
 	canHub := ws.NewHub()
-	canFrameHandler := handler.NewCANFrameHandler(&repository.LogRepo{}, canHub)
+	canFrameSvc := service.NewCANFrameService(&repository.LogRepo{}, canHub)
+	canFrameHandler := handler.NewCANFrameHandler(canFrameSvc)
+	service.NewTCPFrameReceiver(s.cfg, tcpConfigRepo, canFrameSvc).Start()
 
 	api := s.engine.Group("/api/v1")
 	{

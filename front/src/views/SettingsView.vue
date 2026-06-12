@@ -32,7 +32,7 @@
               </td>
               <td>
                 <label class="toggle-cell">
-                  <input v-model="row.enabled" type="checkbox" />
+                  <input :checked="row.enabled" type="checkbox" @change="setEnabled(row, $event.target.checked)" />
                   <span>{{ row.enabled ? '启用' : '停用' }}</span>
                 </label>
               </td>
@@ -80,10 +80,21 @@ async function loadTcpConfigs() {
 function addTcpConfig() {
   tcpConfigs.value.push(normalizeRow({
     name: '默认 TCP 目标',
-    host: '127.0.0.1',
-    port: 9000,
+    host: '192.168.1.253',
+    port: 8000,
     enabled: tcpConfigs.value.length === 0,
   }))
+}
+
+function setEnabled(row, checked) {
+  row.enabled = checked
+  if (checked) {
+    for (const item of tcpConfigs.value) {
+      if (item.local_id !== row.local_id) {
+        item.enabled = false
+      }
+    }
+  }
 }
 
 async function saveTcpConfig(row) {

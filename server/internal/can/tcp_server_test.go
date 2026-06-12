@@ -18,15 +18,19 @@ func TestTCPTestServerReceivesCANFrame(t *testing.T) {
 	}
 
 	got := server.receive(t)
-	want := []byte{IDAmbientLight, 0x01, 0x02, 0x00, 0xEF, 0x33, 0x40, 0x10, 0x10}
+	want := []byte{0x08, 0x00, 0x00, 0x00, IDAmbientLight, 0x01, 0x02, 0x00, 0xEF, 0x33, 0x40, 0x10, 0x10}
 	if !bytes.Equal(got, want) {
 		t.Fatalf("received frame mismatch: got % X want % X", got, want)
 	}
-	if got[0] != IDAmbientLight {
-		t.Fatalf("can id = 0x%02X, want 0x%02X", got[0], IDAmbientLight)
+	canID, canData, err := ParseTCPPayload(got)
+	if err != nil {
+		t.Fatalf("parse payload: %v", err)
 	}
-	if !bytes.Equal(got[1:], data[:]) {
-		t.Fatalf("can data = % X, want % X", got[1:], data)
+	if canID != IDAmbientLight {
+		t.Fatalf("can id = 0x%02X, want 0x%02X", canID, IDAmbientLight)
+	}
+	if canData != data {
+		t.Fatalf("can data = % X, want % X", canData, data)
 	}
 }
 
@@ -60,7 +64,7 @@ func newTCPTestServer(t *testing.T) *tcpTestServer {
 		}
 		defer conn.Close()
 
-		buf := make([]byte, 9)
+		buf := make([]byte, 13)
 		n, err := io.ReadFull(conn, buf)
 		if err != nil {
 			return
